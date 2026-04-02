@@ -212,6 +212,7 @@
       place-items: center;
       overflow: visible;
       transform: translateY(135px);
+
     }
 
     #game {
@@ -372,7 +373,7 @@
     goal.bottomY = arena.cy + arena.r;
 
     const settings = {
-      radius: 21,
+      radius: 23,
       maxSpeed: 570,
       minSpeed: 150,
       friction: 0.999,
@@ -509,9 +510,13 @@
 
     function spawnConfetti(teamColor, pieces, durationMs) {
       confettiLayerEl.innerHTML = "";
-      const palette = teamColor === "blue"
-        ? ["#2e86de", "#8ec5ff", "#d5ebff", "#f5fbff"]
-        : ["#e74c3c", "#ff8f84", "#ffd2cd", "#fff1ef"];
+      const confettiColors = {
+  blue: ["red", "blue"],
+  red: ["#c8102e", "#ffffff"]
+        };
+
+      const palette = confettiColors[teamColor] || ["#ffffff", "#cccccc"];
+
       for (let i = 0; i < pieces; i++) {
         const piece = document.createElement("span");
         piece.className = "confetti-piece";
