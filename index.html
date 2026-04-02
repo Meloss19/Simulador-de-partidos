@@ -398,26 +398,37 @@
       blue: "Barcelona",
       red: "Atletico"
     };
+    const teamImages = {
+      blue: "barcelona.webp",
+      red: "atletico.webp"
+    };
+    const teamSprites = {
+      blue: new Image(),
+      red: new Image()
+    };
+    if (teamImages.blue) teamSprites.blue.src = teamImages.blue;
+    if (teamImages.red) teamSprites.red.src = teamImages.red;
 
     function rand(min, max) {
       return min + Math.random() * (max - min);
     }
 
-    function makeBall(x, y, color) {
+    function makeBall(x, y, color, team) {
       const ball = {
         x,
         y,
         vx: 0,
         vy: 0,
         r: settings.radius,
-        color
+        color,
+        team
       };
       return ball;
     }
 
     const balls = [
-      makeBall(W * 0.5 - 42, H * 0.5, "#2e86de"),
-      makeBall(W * 0.5 + 42, H * 0.5, "#e74c3c")
+      makeBall(W * 0.5 - 42, H * 0.5, "#2e86de", "blue"),
+      makeBall(W * 0.5 + 42, H * 0.5, "#e74c3c", "red")
     ];
     let kickoffBoostUntil = 0;
     let kickoffNoGoalUntil = 0;
@@ -790,6 +801,21 @@
     }
 
     function drawBall(ball) {
+      const sprite = teamSprites[ball.team];
+      if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+        const size = ball.r * 2.45;
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.28)";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r * 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.12)";
+        ctx.fill();
+        ctx.restore();
+        ctx.drawImage(sprite, ball.x - size / 2, ball.y - size / 2, size, size);
+        return;
+      }
+
       ctx.beginPath();
       ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
       ctx.fillStyle = ball.color;
