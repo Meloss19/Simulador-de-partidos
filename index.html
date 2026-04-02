@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Duelos de Esferas</title>
+  <style>
+    :root {
+      --bg: #0b1f2a;
+      --field: #0f7a4a;
+      --line: #dce8df;
+      --goal: #efefef;
+      --blue: #2e86de;
+      --red: #e74c3c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      align-content: start;
+      padding-top: 35px;
+      background: radial-gradient(circle at top, #14374c, var(--bg) 55%);
+      color: #fff;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    .wrap {
+      width: min(88vw, 380px);
+      display: grid;
+      gap: 34px;
+    }
+
+    .hud {
+      display: grid;
+      place-items: center;
+      margin-top: 0;
+      transform: translateY(-6px);
+      position: relative;
+      min-height: 62px;
+    }
+
+    .scoreboard {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(238, 248, 243, 0.14), rgba(88, 122, 109, 0.2));
+      border: 1px solid rgba(202, 225, 213, 0.55);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255,255,255,0.06);
+      backdrop-filter: blur(2px);
+    }
+
+    .game-clock {
+      min-width: 60px;
+      text-align: center;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      color: #e8f5ef;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(210, 232, 221, 0.45);
+      background: rgba(10, 40, 34, 0.45);
+    }
+
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .team .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.35);
+    }
+
+    .team.blue { color: #8ec5ff; }
+    .team.blue .dot { background: #2e86de; }
+    .team.red { color: #ffb0a7; }
+    .team.red .dot { background: #e74c3c; }
+
+    .score-sep {
+      color: rgba(235, 245, 239, 0.85);
+      font-weight: 700;
+      opacity: 0.95;
+    }
+
+    .phase-banner {
+      min-height: 22px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(225, 239, 232, 0.42);
+      background: rgba(9, 39, 31, 0.55);
+      color: #f3fbf7;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      position: absolute;
+      top: 60.5px;
+      left: 50%;
+      transform: translateX(-50%);
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .phase-banner.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .phase-banner.blue {
+      color: #8ec5ff;
+      border-color: rgba(142, 197, 255, 0.62);
+      box-shadow: 0 0 12px rgba(46, 134, 222, 0.34);
+    }
+
+    .phase-banner.red {
+      color: #ffb0a7;
+      border-color: rgba(255, 176, 167, 0.62);
+      box-shadow: 0 0 12px rgba(231, 76, 60, 0.34);
+    }
+
+    .confetti-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      overflow: hidden;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      top: -18px;
+      width: 9px;
+      height: 14px;
+      opacity: 0.9;
+      animation: confetti-fall 1100ms linear forwards;
+    }
+
+    .winner-overlay {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 220ms ease;
+    }
+
+    .winner-overlay.show {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .winner-text {
+      font-size: clamp(40px, 7.5vw, 76px);
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      border-radius: 14px;
+      border: 2px solid rgba(236, 245, 240, 0.7);
+      background: rgba(7, 30, 24, 0.66);
+      color: #e8f6ef;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .winner-text.blue {
+      color: #8ec5ff;
+      border-color: rgba(142, 197, 255, 0.78);
+      text-shadow: 0 0 16px rgba(46, 134, 222, 0.6);
+    }
+
+    .winner-text.red {
+      color: #ffb0a7;
+      border-color: rgba(255, 176, 167, 0.78);
+      text-shadow: 0 0 16px rgba(231, 76, 60, 0.6);
+    }
+
+    @keyframes confetti-fall {
+      from {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.95;
+      }
+      to {
+        transform: translateY(105vh) rotate(540deg);
+        opacity: 0.85;
+      }
+    }
+
+    .arena {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      overflow: visible;
+      transform: translateY(25px);
+    }
+
+    #game {
+      width: 100%;
+      height: auto;
+      border: 3px solid #b8cfc0;
+      border-radius: 50%;
+      background: transparent;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      position: relative;
+      z-index: 2;
+    }
+
+    .goal-css {
+      position: absolute;
+      left: 50%;
+      width: 30%;
+      height: 11%;
+      transform: translateX(-50%);
+      border: 4px solid rgba(244, 251, 247, 0.96);
+      border-radius: 1px;
+      background:
+        repeating-linear-gradient(
+          to right,
+          rgba(241, 249, 245, 0.4) 0 2px,
+          rgba(241, 249, 245, 0) 2px 10px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(241, 249, 245, 0.35) 0 2px,
+          rgba(241, 249, 245, 0) 2px 10px
+        ),
+        linear-gradient(to bottom, rgba(140, 170, 155, 0.22), rgba(50, 75, 66, 0.32));
+      box-shadow: 0 0 8px rgba(209, 240, 227, 0.28);
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .goal-css::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      width: 118%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .goal-top {
+      top: -1.8%;
+    }
+
+    .goal-top::after {
+      bottom: -10px;
+      height: 12px;
+      border: 3px solid rgba(226, 239, 232, 0.92);
+      border-top: 0;
+      border-radius: 0 0 999px 999px;
+      box-shadow: 0 2px 4px rgba(175, 216, 198, 0.2);
+    }
+
+    .goal-bottom {
+      bottom: -1.8%;
+      transform: translateX(-50%) rotate(180deg) !important;
+    }
+
+    .goal-bottom::after {
+      bottom: -10px;
+      height: 12px;
+      border: 3px solid rgba(226, 239, 232, 0.92);
+      border-top: 0;
+      border-radius: 0 0 999px 999px;
+      box-shadow: 0 2px 4px rgba(175, 216, 198, 0.2);
+    }
+
+    .goal-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(230, 244, 237, 0.36);
+      background: rgba(8, 33, 28, 0.6);
+      color: #e8f4ee;
+      z-index: 5;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .goal-label.top {
+      top: -9.8%;
+      color: #ffb0a7;
+    }
+
+    .goal-label.bottom {
+      bottom: -12.8%;
+      color: #8ec5ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hud">
+      <div class="scoreboard" role="status" aria-live="polite">
+        <div class="team blue"><span class="dot" aria-hidden="true"></span>Azul <span id="scoreBlue">0</span></div>
+        <div class="score-sep">:</div>
+        <div class="team red"><span class="dot" aria-hidden="true"></span>Rojo <span id="scoreRed">0</span></div>
+        <div class="game-clock"><span id="matchClock">00:00</span></div>
+      </div>
+      <div id="phaseBanner" class="phase-banner" aria-live="polite"></div>
+    </div>
+    <div class="arena">
+      <div id="topGoalLabel" class="goal-label top">Porteria de Rojo</div>
+      <div class="goal-css goal-top" aria-hidden="true"></div>
+      <canvas id="game" width="380" height="380"></canvas>
+      <div class="goal-css goal-bottom" aria-hidden="true"></div>
+      <div id="bottomGoalLabel" class="goal-label bottom">Porteria de Azul</div>
+    </div>
+  </div>
+  <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
+  <div id="winnerOverlay" class="winner-overlay" aria-live="polite">
+    <div id="winnerText" class="winner-text"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreBlueEl = document.getElementById("scoreBlue");
+    const scoreRedEl = document.getElementById("scoreRed");
+    const matchClockEl = document.getElementById("matchClock");
+    const phaseBannerEl = document.getElementById("phaseBanner");
+    const topGoalLabelEl = document.getElementById("topGoalLabel");
+    const bottomGoalLabelEl = document.getElementById("bottomGoalLabel");
+    const confettiLayerEl = document.getElementById("confettiLayer");
+    const winnerOverlayEl = document.getElementById("winnerOverlay");
+    const winnerTextEl = document.getElementById("winnerText");
+
+    const W = canvas.width;
+    const H = canvas.height;
+    const arena = {
+      cx: W / 2,
+      cy: H / 2,
+      r: Math.min(W, H) * 0.47
+    };
+
+    const goal = {
+      width: 112,
+      depth: 26
+    };
+    goal.xMin = arena.cx - goal.width / 2;
+    goal.xMax = arena.cx + goal.width / 2;
+    goal.topY = arena.cy - arena.r;
+    goal.bottomY = arena.cy + arena.r;
+
+    const settings = {
+      radius: 14,
+      maxSpeed: 570,
+      minSpeed: 120,
+      friction: 0.999,
+      restitutionWalls: 0.96,
+      restitutionBall: 0.985
+    };
+
+    const scores = { blue: 0, red: 0 };
+    const match = {
+      elapsedSec: 0,
+      maxSec: 90 * 60,
+      halfSec: 45 * 60,
+      speed: 145, // 90:00 en ~37s reales
+      ended: false,
+      phase: "first_half",
+      halftimeUntil: 0
+    };
+    const goalSides = {
+      topDefender: "red",
+      bottomDefender: "blue"
+    };
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function makeBall(x, y, color) {
+      const ball = {
+        x,
+        y,
+        vx: 0,
+        vy: 0,
+        r: settings.radius,
+        color
+      };
+      return ball;
+    }
+
+    const balls = [
+      makeBall(W * 0.5 - 42, H * 0.5, "#2e86de"),
+      makeBall(W * 0.5 + 42, H * 0.5, "#e74c3c")
+    ];
+    let kickoffBoostUntil = 0;
+    let kickoffNoGoalUntil = 0;
+    let stagnantFor = 0;
+    let goalBannerTimeout = 0;
+
+    function resetAfterGoal() {
+      const centerX = arena.cx + rand(-6, 6);
+      const centerY = arena.cy + rand(-8, 8);
+      const gap = 44;
+      const dirX = 1;
+      const dirY = rand(-0.22, 0.22);
+      const base = rand(320, 380);
+
+      balls[0].x = centerX - dirX * gap;
+      balls[0].y = centerY - dirY * gap;
+      balls[1].x = centerX + dirX * gap;
+      balls[1].y = centerY + dirY * gap;
+
+      balls[0].vx = dirX * base;
+      balls[0].vy = dirY * base;
+      balls[1].vx = -dirX * base;
+      balls[1].vy = -dirY * base;
+
+      // Ventana corta para asegurar arranque con energia pareja.
+      kickoffBoostUntil = performance.now() + 800;
+      // Evita autogoles instantaneos tras el saque.
+      kickoffNoGoalUntil = performance.now() + 1200;
+    }
+
+    function updateScore() {
+      scoreBlueEl.textContent = scores.blue;
+      scoreRedEl.textContent = scores.red;
+    }
+
+    function updateGoalLabels() {
+      topGoalLabelEl.textContent = `Porteria de ${goalSides.topDefender === "blue" ? "Azul" : "Rojo"}`;
+      bottomGoalLabelEl.textContent = `Porteria de ${goalSides.bottomDefender === "blue" ? "Azul" : "Rojo"}`;
+      topGoalLabelEl.style.color = goalSides.topDefender === "blue" ? "#8ec5ff" : "#ffb0a7";
+      bottomGoalLabelEl.style.color = goalSides.bottomDefender === "blue" ? "#8ec5ff" : "#ffb0a7";
+    }
+
+    function showPhaseBanner(text, teamColor = null) {
+      phaseBannerEl.textContent = text;
+      phaseBannerEl.classList.remove("blue", "red");
+      if (teamColor) phaseBannerEl.classList.add(teamColor);
+      phaseBannerEl.classList.add("show");
+    }
+
+    function hidePhaseBanner() {
+      phaseBannerEl.classList.remove("blue", "red");
+      phaseBannerEl.classList.remove("show");
+    }
+
+    function triggerGoalCelebration(team, ownGoal = false, styleTeam = team) {
+      if (goalBannerTimeout) clearTimeout(goalBannerTimeout);
+      const teamName = team === "blue" ? "Azul" : "Rojo";
+      showPhaseBanner(ownGoal ? `Autogol de ${teamName}` : `Gol de ${teamName}`, styleTeam);
+
+      spawnConfetti(styleTeam, 90, 1100);
+
+      goalBannerTimeout = setTimeout(() => {
+        if (match.phase === "halftime") {
+          showPhaseBanner("Entretiempo");
+        } else if (match.ended) {
+          showPhaseBanner("Final del partido");
+        } else {
+          hidePhaseBanner();
+        }
+        confettiLayerEl.innerHTML = "";
+      }, 1200);
+    }
+
+    function spawnConfetti(teamColor, pieces, durationMs) {
+      confettiLayerEl.innerHTML = "";
+      const palette = teamColor === "blue"
+        ? ["#2e86de", "#8ec5ff", "#d5ebff", "#f5fbff"]
+        : ["#e74c3c", "#ff8f84", "#ffd2cd", "#fff1ef"];
+      for (let i = 0; i < pieces; i++) {
+        const piece = document.createElement("span");
+        piece.className = "confetti-piece";
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.background = palette[Math.floor(Math.random() * palette.length)];
+        piece.style.animationDelay = `${Math.random() * 220}ms`;
+        piece.style.transform = `translateY(0) rotate(${Math.floor(Math.random() * 360)}deg)`;
+        piece.style.animationDuration = `${durationMs}ms`;
+        confettiLayerEl.appendChild(piece);
+      }
+    }
+
+    function showWinnerOverlay() {
+      winnerTextEl.classList.remove("blue", "red");
+      if (scores.blue > scores.red) {
+        winnerTextEl.textContent = "Gana Azul";
+        winnerTextEl.classList.add("blue");
+        spawnConfetti("blue", 170, 1500);
+      } else if (scores.red > scores.blue) {
+        winnerTextEl.textContent = "Gana Rojo";
+        winnerTextEl.classList.add("red");
+        spawnConfetti("red", 170, 1500);
+      } else {
+        winnerTextEl.textContent = "Empate";
+      }
+      winnerOverlayEl.classList.add("show");
+    }
+
+    function showHalftimeOverlay() {
+      winnerTextEl.classList.remove("blue", "red");
+      winnerTextEl.textContent = "Entretiempo";
+      winnerOverlayEl.classList.add("show");
+    }
+
+    function hideWinnerOverlay() {
+      winnerOverlayEl.classList.remove("show");
+    }
+
+    function startHalftime(now) {
+      match.phase = "halftime";
+      match.halftimeUntil = now + 2200;
+      hidePhaseBanner();
+      showHalftimeOverlay();
+      for (const ball of balls) {
+        ball.vx = 0;
+        ball.vy = 0;
+      }
+    }
+
+    function beginSecondHalf() {
+      match.phase = "second_half";
+      hidePhaseBanner();
+      hideWinnerOverlay();
+      const oldTop = goalSides.topDefender;
+      goalSides.topDefender = goalSides.bottomDefender;
+      goalSides.bottomDefender = oldTop;
+      updateGoalLabels();
+      resetAfterGoal();
+    }
+
+    function formatClock(totalSec) {
+      const s = Math.max(0, Math.floor(totalSec));
+      const mm = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function updateClock(dt, now) {
+      if (match.ended || match.phase === "halftime") return;
+      match.elapsedSec += dt * match.speed;
+      if (match.phase === "first_half" && match.elapsedSec >= match.halfSec) {
+        match.elapsedSec = match.halfSec;
+        startHalftime(now);
+      }
+      if (match.elapsedSec >= match.maxSec) {
+        match.elapsedSec = match.maxSec;
+        match.ended = true;
+        showPhaseBanner("Final del partido");
+        showWinnerOverlay();
+      }
+      matchClockEl.textContent = formatClock(match.elapsedSec);
+    }
+
+    function clampSpeed(ball) {
+      const s = Math.hypot(ball.vx, ball.vy);
+      if (s > settings.maxSpeed) {
+        const k = settings.maxSpeed / s;
+        ball.vx *= k;
+        ball.vy *= k;
+      }
+    }
+
+    function enforceMinSpeed(ball) {
+      const s = Math.hypot(ball.vx, ball.vy);
+      if (s >= settings.minSpeed) return;
+      if (s < 0.001) {
+        const a = rand(0, Math.PI * 2);
+        ball.vx = Math.cos(a) * settings.minSpeed;
+        ball.vy = Math.sin(a) * settings.minSpeed;
+        return;
+      }
+      const k = settings.minSpeed / s;
+      ball.vx *= k;
+      ball.vy *= k;
+    }
+
+    function enforceKickoffEnergy(ball, now) {
+      if (now > kickoffBoostUntil) return;
+      const s = Math.hypot(ball.vx, ball.vy) || 1;
+      const minS = 210;
+      if (s >= minS) return;
+      const k = minS / s;
+      ball.vx *= k;
+      ball.vy *= k;
+    }
+
+    function resolveWallCollisions(ball) {
+      const dx = ball.x - arena.cx;
+      const dy = ball.y - arena.cy;
+      const dist = Math.hypot(dx, dy) || 1;
+      const limit = arena.r - ball.r;
+      if (dist <= limit) return;
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const inGoalMouth = ball.x > goal.xMin && ball.x < goal.xMax;
+      const goalOpen = performance.now() > kickoffNoGoalUntil;
+      const topExit = goalOpen && inGoalMouth && ny < -0.82 && ball.vy < 0;
+      const bottomExit = goalOpen && inGoalMouth && ny > 0.82 && ball.vy > 0;
+
+      if (topExit || bottomExit) return;
+
+      const overlap = dist - limit;
+      ball.x -= nx * overlap;
+      ball.y -= ny * overlap;
+
+      const vn = ball.vx * nx + ball.vy * ny;
+      if (vn > 0) {
+        ball.vx -= (1 + settings.restitutionWalls) * vn * nx;
+        ball.vy -= (1 + settings.restitutionWalls) * vn * ny;
+      }
+    }
+
+    function resolveBallCollision(a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy);
+      const minDist = a.r + b.r;
+      if (!dist || dist >= minDist) return;
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = minDist - dist;
+
+      a.x -= nx * overlap * 0.5;
+      a.y -= ny * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.y += ny * overlap * 0.5;
+
+      const rvx = b.vx - a.vx;
+      const rvy = b.vy - a.vy;
+      const velAlongNormal = rvx * nx + rvy * ny;
+      if (velAlongNormal > 0) return;
+
+      const impulse = -(1 + settings.restitutionBall) * velAlongNormal / 2;
+      const ix = impulse * nx;
+      const iy = impulse * ny;
+
+      a.vx -= ix;
+      a.vy -= iy;
+      b.vx += ix;
+      b.vy += iy;
+
+      // Ruido aleatorio para romper ciclos y variar direcciones de salida.
+      const ang = rand(-0.36, 0.36);
+      const c = Math.cos(ang);
+      const s = Math.sin(ang);
+      const avx = a.vx * c - a.vy * s;
+      const avy = a.vx * s + a.vy * c;
+      const bvx = b.vx * c + b.vy * s;
+      const bvy = -b.vx * s + b.vy * c;
+      a.vx = avx;
+      a.vy = avy;
+      b.vx = bvx;
+      b.vy = bvy;
+
+      const kick = rand(12, 28);
+      a.vx -= nx * kick;
+      a.vy -= ny * kick;
+      b.vx += nx * kick;
+      b.vy += ny * kick;
+
+      // Componente tangencial aleatoria (perpendicular al eje de choque).
+      const tx = -ny;
+      const ty = nx;
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const spinKick = rand(18, 42) * side;
+      a.vx += tx * spinKick;
+      a.vy += ty * spinKick;
+      b.vx -= tx * spinKick;
+      b.vy -= ty * spinKick;
+    }
+
+    function antiStagnation(dt) {
+      const s0 = Math.hypot(balls[0].vx, balls[0].vy);
+      const s1 = Math.hypot(balls[1].vx, balls[1].vy);
+      const nearDead = s0 < 75 && s1 < 75;
+      if (nearDead) stagnantFor += dt;
+      else stagnantFor = Math.max(0, stagnantFor - dt * 0.6);
+
+      if (stagnantFor < 0.65) return;
+      stagnantFor = 0;
+
+      // Empujon aleatorio corto para reactivar dinamica.
+      for (const ball of balls) {
+        const angle = rand(0, Math.PI * 2);
+        const p = rand(115, 165);
+        ball.vx += Math.cos(angle) * p;
+        ball.vy += Math.sin(angle) * p;
+      }
+    }
+
+    function checkGoals() {
+      if (performance.now() < kickoffNoGoalUntil) return;
+      for (const ball of balls) {
+        const inGoalX = ball.x > goal.xMin + ball.r * 0.25 && ball.x < goal.xMax - ball.r * 0.25;
+        if (!inGoalX) continue;
+
+        if (ball.y + ball.r < goal.topY - goal.depth - 2) {
+          const defender = goalSides.topDefender;
+          const shooter = ball.color === "#2e86de" ? "blue" : "red";
+          const ownGoal = shooter === defender;
+          const scorer = ownGoal ? defender === "blue" ? "red" : "blue" : shooter;
+          scores[scorer] += 1;
+          updateScore();
+          triggerGoalCelebration(ownGoal ? shooter : scorer, ownGoal, scorer);
+          resetAfterGoal();
+          return;
+        }
+
+        if (ball.y - ball.r > goal.bottomY + goal.depth + 2) {
+          const defender = goalSides.bottomDefender;
+          const shooter = ball.color === "#2e86de" ? "blue" : "red";
+          const ownGoal = shooter === defender;
+          const scorer = ownGoal ? defender === "blue" ? "red" : "blue" : shooter;
+          scores[scorer] += 1;
+          updateScore();
+          triggerGoalCelebration(ownGoal ? shooter : scorer, ownGoal, scorer);
+          resetAfterGoal();
+          return;
+        }
+      }
+    }
+
+    function drawField() {
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.fillStyle = "#0f7a4a";
+      ctx.beginPath();
+      ctx.arc(arena.cx, arena.cy, arena.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(arena.cx, arena.cy, arena.r - 4, 0, Math.PI * 2);
+      ctx.clip();
+
+      ctx.strokeStyle = "#dce8df";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(arena.cx - arena.r, arena.cy);
+      ctx.lineTo(arena.cx + arena.r, arena.cy);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(arena.cx, arena.cy, 44, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.strokeStyle = "#dce8df";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(arena.cx, arena.cy, arena.r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Las porterias se renderizan como capas HTML fuera del canvas para evitar recorte circular.
+    }
+
+    function drawBall(ball) {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fillStyle = ball.color;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      ctx.stroke();
+    }
+
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min((now - last) / 1000, 0.03);
+      last = now;
+      updateClock(dt, now);
+
+      if (match.phase === "halftime") {
+        if (now >= match.halftimeUntil) beginSecondHalf();
+        drawField();
+        for (const ball of balls) drawBall(ball);
+        requestAnimationFrame(loop);
+        return;
+      }
+
+      if (match.ended) {
+        drawField();
+        for (const ball of balls) drawBall(ball);
+        requestAnimationFrame(loop);
+        return;
+      }
+
+      for (const ball of balls) {
+        enforceKickoffEnergy(ball, now);
+        ball.vx *= settings.friction;
+        ball.vy *= settings.friction;
+        enforceMinSpeed(ball);
+        clampSpeed(ball);
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+        resolveWallCollisions(ball);
+      }
+
+      resolveBallCollision(balls[0], balls[1]);
+      antiStagnation(dt);
+      checkGoals();
+
+      drawField();
+      for (const ball of balls) drawBall(ball);
+      requestAnimationFrame(loop);
+    }
+
+    updateScore();
+    updateGoalLabels();
+    matchClockEl.textContent = "00:00";
+    resetAfterGoal();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
