@@ -411,6 +411,18 @@
     if (teamImages.red) teamSprites.red.src = teamImages.red;
     const whistleSound = new Audio("whistle.mp3");
     whistleSound.preload = "auto";
+    const ballHitSound = new Audio("ball-hit.mp3");
+    ballHitSound.preload = "auto";
+    const wallHitSound = new Audio("wall-hit.mp3");
+    wallHitSound.preload = "auto";
+    const matchAmbienceSound = new Audio("match-ambience.mp3");
+    matchAmbienceSound.preload = "auto";
+    matchAmbienceSound.loop = true;
+    matchAmbienceSound.volume = 0.45;
+    const goalSound = new Audio("goal.mp3");
+    goalSound.preload = "auto";
+    goalSound.volume = 0.9;
+    let ambiencePlaying = false;
 
     function rand(min, max) {
       return min + Math.random() * (max - min);
@@ -419,6 +431,35 @@
     function playWhistle() {
       whistleSound.currentTime = 0;
       whistleSound.play().catch(() => {});
+    }
+
+    function playBallHit() {
+      ballHitSound.currentTime = 0;
+      ballHitSound.play().catch(() => {});
+    }
+
+    function playWallHit() {
+      wallHitSound.currentTime = 0;
+      wallHitSound.play().catch(() => {});
+    }
+
+    function startMatchAmbience() {
+      if (ambiencePlaying) return;
+      matchAmbienceSound.play().then(() => {
+        ambiencePlaying = true;
+      }).catch(() => {});
+    }
+
+    function stopMatchAmbience() {
+      if (!ambiencePlaying) return;
+      matchAmbienceSound.pause();
+      matchAmbienceSound.currentTime = 0;
+      ambiencePlaying = false;
+    }
+
+    function playGoalSound() {
+      goalSound.currentTime = 0;
+      goalSound.play().catch(() => {});
     }
 
     function makeBall(x, y, color, team) {
@@ -500,6 +541,7 @@
       if (goalBannerTimeout) clearTimeout(goalBannerTimeout);
       const teamName = teamNames[team];
       showPhaseBanner(ownGoal ? `Autogol de ${teamName}` : `Gol de ${teamName}`, styleTeam);
+      playGoalSound();
 
       spawnConfetti(styleTeam, 90, 1100);
 
@@ -664,6 +706,7 @@
 
       const vn = ball.vx * nx + ball.vy * ny;
       if (vn > 0) {
+        playWallHit();
         ball.vx -= (1 + settings.restitutionWalls) * vn * nx;
         ball.vy -= (1 + settings.restitutionWalls) * vn * ny;
       }
@@ -693,6 +736,8 @@
       const impulse = -(1 + settings.restitutionBall) * velAlongNormal / 2;
       const ix = impulse * nx;
       const iy = impulse * ny;
+
+      playBallHit();
 
       a.vx -= ix;
       a.vy -= iy;
@@ -843,6 +888,7 @@
     function loop(now) {
       const dt = Math.min((now - last) / 1000, 0.03);
       last = now;
+      if (!match.ended) startMatchAmbience();
       updateClock(dt, now);
 
       if (match.phase === "halftime") {
@@ -854,6 +900,7 @@
       }
 
       if (match.ended) {
+        stopMatchAmbience();
         drawField();
         for (const ball of balls) drawBall(ball);
         requestAnimationFrame(loop);
