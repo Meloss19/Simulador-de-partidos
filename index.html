@@ -53,6 +53,7 @@
       border: 1px solid rgba(202, 225, 213, 0.55);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255,255,255,0.06);
       backdrop-filter: blur(2px);
+      transform: translateY(80px);
     }
 
     .game-clock {
@@ -99,7 +100,7 @@
       min-height: 22px;
       padding: 3px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(225, 239, 232, 0.42);
+      border: 1px solid rgba(64, 83, 74, 0.42);
       background: rgba(9, 39, 31, 0.55);
       color: #f3fbf7;
       font-weight: 900;
@@ -108,7 +109,7 @@
       text-transform: uppercase;
       white-space: nowrap;
       position: absolute;
-      top: 60.5px;
+      top: 150.5px;
       left: 50%;
       transform: translateX(-50%);
       visibility: hidden;
@@ -210,7 +211,7 @@
       display: grid;
       place-items: center;
       overflow: visible;
-      transform: translateY(25px);
+      transform: translateY(135px);
     }
 
     #game {
@@ -318,9 +319,9 @@
   <div class="wrap">
     <div class="hud">
       <div class="scoreboard" role="status" aria-live="polite">
-        <div class="team blue"><span class="dot" aria-hidden="true"></span>Azul <span id="scoreBlue">0</span></div>
+        <div class="team blue"><span class="dot" aria-hidden="true"></span><span id="teamBlueName">Barcelona</span> <span id="scoreBlue">0</span></div>
         <div class="score-sep">:</div>
-        <div class="team red"><span class="dot" aria-hidden="true"></span>Rojo <span id="scoreRed">0</span></div>
+        <div class="team red"><span class="dot" aria-hidden="true"></span><span id="teamRedName">Atletico</span> <span id="scoreRed">0</span></div>
         <div class="game-clock"><span id="matchClock">00:00</span></div>
       </div>
       <div id="phaseBanner" class="phase-banner" aria-live="polite"></div>
@@ -343,6 +344,8 @@
     const ctx = canvas.getContext("2d");
     const scoreBlueEl = document.getElementById("scoreBlue");
     const scoreRedEl = document.getElementById("scoreRed");
+    const teamBlueNameEl = document.getElementById("teamBlueName");
+    const teamRedNameEl = document.getElementById("teamRedName");
     const matchClockEl = document.getElementById("matchClock");
     const phaseBannerEl = document.getElementById("phaseBanner");
     const topGoalLabelEl = document.getElementById("topGoalLabel");
@@ -390,6 +393,10 @@
     const goalSides = {
       topDefender: "red",
       bottomDefender: "blue"
+    };
+    const teamNames = {
+      blue: "Barcelona",
+      red: "Atletico"
     };
 
     function rand(min, max) {
@@ -446,9 +453,14 @@
       scoreRedEl.textContent = scores.red;
     }
 
+    function updateTeamNamesUI() {
+      teamBlueNameEl.textContent = teamNames.blue;
+      teamRedNameEl.textContent = teamNames.red;
+    }
+
     function updateGoalLabels() {
-      topGoalLabelEl.textContent = `Porteria de ${goalSides.topDefender === "blue" ? "Azul" : "Rojo"}`;
-      bottomGoalLabelEl.textContent = `Porteria de ${goalSides.bottomDefender === "blue" ? "Azul" : "Rojo"}`;
+      topGoalLabelEl.textContent = `Porteria de ${teamNames[goalSides.topDefender]}`;
+      bottomGoalLabelEl.textContent = `Porteria de ${teamNames[goalSides.bottomDefender]}`;
       topGoalLabelEl.style.color = goalSides.topDefender === "blue" ? "#8ec5ff" : "#ffb0a7";
       bottomGoalLabelEl.style.color = goalSides.bottomDefender === "blue" ? "#8ec5ff" : "#ffb0a7";
     }
@@ -467,7 +479,7 @@
 
     function triggerGoalCelebration(team, ownGoal = false, styleTeam = team) {
       if (goalBannerTimeout) clearTimeout(goalBannerTimeout);
-      const teamName = team === "blue" ? "Azul" : "Rojo";
+      const teamName = teamNames[team];
       showPhaseBanner(ownGoal ? `Autogol de ${teamName}` : `Gol de ${teamName}`, styleTeam);
 
       spawnConfetti(styleTeam, 90, 1100);
@@ -504,11 +516,11 @@
     function showWinnerOverlay() {
       winnerTextEl.classList.remove("blue", "red");
       if (scores.blue > scores.red) {
-        winnerTextEl.textContent = "Gana Azul";
+        winnerTextEl.textContent = `Gana ${teamNames.blue}`;
         winnerTextEl.classList.add("blue");
         spawnConfetti("blue", 170, 1500);
       } else if (scores.red > scores.blue) {
-        winnerTextEl.textContent = "Gana Rojo";
+        winnerTextEl.textContent = `Gana ${teamNames.red}`;
         winnerTextEl.classList.add("red");
         spawnConfetti("red", 170, 1500);
       } else {
@@ -829,6 +841,7 @@
     }
 
     updateScore();
+    updateTeamNamesUI();
     updateGoalLabels();
     matchClockEl.textContent = "00:00";
     resetAfterGoal();
