@@ -373,7 +373,7 @@
     goal.bottomY = arena.cy + arena.r;
 
     const settings = {
-      radius: 23,
+      radius: 28,
       maxSpeed: 570,
       minSpeed: 150,
       friction: 0.999,
@@ -409,9 +409,16 @@
     };
     if (teamImages.blue) teamSprites.blue.src = teamImages.blue;
     if (teamImages.red) teamSprites.red.src = teamImages.red;
+    const whistleSound = new Audio("whistle.mp3");
+    whistleSound.preload = "auto";
 
     function rand(min, max) {
       return min + Math.random() * (max - min);
+    }
+
+    function playWhistle() {
+      whistleSound.currentTime = 0;
+      whistleSound.play().catch(() => {});
     }
 
     function makeBall(x, y, color, team) {
@@ -558,6 +565,7 @@
     function startHalftime(now) {
       match.phase = "halftime";
       match.halftimeUntil = now + 2200;
+      playWhistle();
       hidePhaseBanner();
       showHalftimeOverlay();
       for (const ball of balls) {
@@ -594,6 +602,7 @@
       if (match.elapsedSec >= match.maxSec) {
         match.elapsedSec = match.maxSec;
         match.ended = true;
+        playWhistle();
         showPhaseBanner("Final del partido");
         showWinnerOverlay();
       }
