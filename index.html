@@ -396,12 +396,12 @@
       bottomDefender: "blue"
     };
     const teamNames = {
-      blue: "Barcelona",
-      red: "Atletico"
+      blue: "Mallorca",
+      red: "Madrid"
     };
     const teamImages = {
-      blue: "barcelona.png",
-      red: "atletico.png"
+      blue: "mallorca.png",
+      red: "madrid.png"
     };
     const teamSprites = {
       blue: new Image(),
@@ -560,8 +560,8 @@
     function spawnConfetti(teamColor, pieces, durationMs) {
       confettiLayerEl.innerHTML = "";
       const confettiColors = {
-  blue: ["red", "blue"],
-  red: ["#c8102e", "#ffffff"]
+  blue: ["rojo", "amarillo"],
+  red: ["blanco", "#blanco"]
         };
 
       const palette = confettiColors[teamColor] || ["#ffffff", "#cccccc"];
